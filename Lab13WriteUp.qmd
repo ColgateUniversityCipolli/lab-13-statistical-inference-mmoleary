@@ -274,9 +274,130 @@ Conduct the inferences they do in the paper. Make sure to report the results a l
 
 *Conditions*
 
+```{r}
+#| label: fig-SamplingDistributions
+#| fig-cap: "Sampling Distributions."
+#| fig-width: 10
+#| fig-height: 6
+#| scale: "80%"
+#| fig-align: "center"
+
+set.seed(3434)
+
+mu0 = 0
+
+ # Resampling
+ fts <- rep(NA, 1000)
+ fs <- sd(dat.kasdin.cleaned$Farther_vals)
+ n <- nrow(dat.kasdin.cleaned)
+ for(i in 1:1000){
+   curr.sample <- sample(dat.kasdin.cleaned$Farther_vals, size=n, replace=T)
+   fts[i] <- (mean(curr.sample) - mu0)/(fs/sqrt(n))
+ }
+
+ p1 <- ggplot() +
+   stat_density(data=tibble(t=fts), aes(x=t), color="grey", geom="line")+
+   geom_hline(yintercept=0) +
+   theme_bw()+
+   labs(x=bquote(z),
+   y="Density",
+   caption=paste("mean:", round(mean(fts),2), ", sd:", round(sd(fs),2)))
+ 
+
+# Resampling
+ cts <- rep(NA, 1000)
+ cs <- sd(dat.kasdin.cleaned$Closer_vals)
+ n <- nrow(dat.kasdin.cleaned)
+ for(i in 1:1000){
+ curr.sample <- sample(dat.kasdin.cleaned$Closer_vals, size=n, replace=T)
+ cts[i] <- (mean(curr.sample) - mu0)/(cs/sqrt(n))
+ } 
+
+ p2 <- ggplot() +
+   stat_density(data=tibble(t=cts), aes(x=t), color="grey", geom="line")+
+   geom_hline(yintercept=0) +
+   theme_bw()+
+   labs(x=bquote(z),
+   y="Density",
+   caption=paste("mean:", round(mean(cts),2), ", sd:", round(sd(cs),2)))
+
+ # Resampling
+ dts <- rep(NA, 1000)
+ ds <- sd(dat.kasdin.cleaned$difference)
+ n <- nrow(dat.kasdin.cleaned)
+ for(i in 1:1000){
+ curr.sample <- sample(dat.kasdin.cleaned$difference, size=n, replace=T)
+ dts[i] <- (mean(curr.sample) - mu0)/(ds/sqrt(n))
+ } 
+
+ p3 <- ggplot() +
+   stat_density(data=tibble(t=dts), aes(x=t), color="grey", geom="line")+
+   geom_hline(yintercept=0) +
+   theme_bw()+
+   labs(x=bquote(z),
+   y="Density",
+   caption=paste("mean:", round(mean(dts),2), ", sd:", round(sd(ds),2)))
+
+(p1 | p2 | p3)
+```
+
+```{r}
+#| size: scriptsize
+closer.sampling.summary = tibble(t=cts) |>
+  summarize( #calculates data for a table with the following measures
+    Skewness = e1071::skewness(cts, na.rm = T),
+    "Excess Kurtosis" = e1071::kurtosis(cts, na.rm = T)
+  ) 
+```
+
+```{r}
+#| size: scriptsize
+farther.sampling.summary = tibble(t=cts) |>
+  summarize( #calculates data for a table with the following measures
+    Skewness = e1071::skewness(fts, na.rm = T),
+    "Excess Kurtosis" = e1071::kurtosis(fts, na.rm = T)
+  ) 
+```
+
+```{r}
+#| label: tbl-sampling-dist-farther
+#| tbl-cap: "Sampling Distributions for Farther Values"
+#| tbl-align: "center"
+#| echo: false
+farther.sampling.summary |>
+  knitr::kable(digits = 3) #digits specify decimal in table values
+```
+
+```{r}
+#| label: tbl-sampling-dist-closer
+#| tbl-cap: "Sampling Distributions for Closer Values"
+#| tbl-align: "center"
+#| echo: false
+closer.sampling.summary |>
+  knitr::kable(digits = 3) #digits specify decimal in table values
+```
+
+```{r}
+#| size: scriptsize
+difference.sampling.summary = tibble(t=dts) |>
+  summarize( #calculates data for a table with the following measures
+    Skewness = e1071::skewness(dts, na.rm = T),
+    "Excess Kurtosis" = e1071::kurtosis(dts, na.rm = T)
+  ) 
+```
+
+```{r}
+#| label: tbl-sampling-dist-differences
+#| tbl-cap: "Sampling Distribution for Difference"
+#| tbl-align: "center"
+#| echo: false
+difference.sampling.summary |>
+  knitr::kable(digits = 3) #digits specify decimal in table values
+```
+
 * The sample is generalizable to the adult zebra finch population in Area X.
 * Researchers collected the observations through randomization, so observations are independent.
-* Based on our power calculations, the sample size is sufficiently large.
+* The sampling distributions are all approximately normal with minimal skew and excess kurtosis, so our sampling distribtution assumptions are met.
 
 
 
@@ -289,7 +410,7 @@ hedges_g(x=dat.kasdin.cleaned$Closer_vals, mu = 0, alternative = "greater")
 t.test(x=dat.kasdin.cleaned$Closer_vals, mu=0, alternative="greater")
 ```
 
-($t=9.1573$, $p<0.0001$; $g=1.77$; 95% CI: $0.1452511$, $\infty$)
+We have discernable support that the zebra finches in Area X had increased dopamine levels while singing closer. ($t=9.1573$, $p= 1.333 \times 10^{-9}$; $g=1.77$; 95% CI: $0.1452511$, $\infty$)
 
 * "The far responses differed significantly from 0 ($p=5.17 \times 10^{-8}$).''\
 **Note**: Use the appropriate one-sided test.
@@ -299,7 +420,7 @@ hedges_g(x=dat.kasdin.cleaned$Farther_vals, mu = 0, alternative = "less")
 t.test(x=dat.kasdin.cleaned$Farther_vals, mu=0, alternative="less")
 ```
 
-($t=-7.9245$, $p<0.0001$; $g=-1.54$; 95% CI: $-\infty$, $4.60$)
+We have discernable support that the zebra finches in Area X had decreased dopamine levels while singing farther away.($t=-7.9245$, $p= 1.866 \times 10^{-8}$; $g=-1.54$; 95% CI: $-\infty$, $4.60$)
 
 * "The difference between populations was significant ($p=1.04 \times10^{-8}$).''\
 **Note**: Use the two-sided test.
@@ -309,7 +430,7 @@ hedges_g(x=dat.kasdin.cleaned$difference, mu = 0, alternative = "two.sided")
 t.test(x=dat.kasdin.cleaned$difference, mu=0, alternative="two.sided")
 ```
 
-($t=9.1428$, $p<0.0001$; $g=1.77$; 95% CI: $0.303$, $0.480$)
+We have discernable support that the zebra finches in Area X had different dopamine levels depending on their distance.($t=9.1428$, $p= 0.746 \times 10^{-9}$; $g=1.77$; 95% CI: $0.303$, $0.480$)
 
 ## Part e 
 
@@ -334,31 +455,33 @@ t.stat = t.test(x=dat.kasdin.cleaned$Farther_vals,
                 mu=0, 
                 alternative="less")$statistic
 
+t.critical = qt(1-0.05, df=24)
+
 ggdat <- tibble(t = seq(-4, 4, length.out=1000)) |>
  mutate(pdf.h0 = dt(t, df=24))
 
- # Resampling
- ts <- rep(NA, 1000)
- s <- sd(dat.kasdin.cleaned$Farther_vals)
- n <- nrow(dat.kasdin.cleaned)
- for(i in 1:1000){
- curr.sample <- sample(dat.kasdin.cleaned$Farther_vals, size=n, replace=T)
- ts[i] <- (mean(curr.sample) - mu0)/(s/sqrt(n))
- }
 
  # create vector of axis ticks
  t.breaks <- seq(-24, 24, 4)
- xbar.breaks <- round(t.breaks * (s/sqrt(n)) + mu0, 2)
+ xbar.breaks <- round(t.breaks * (fs/sqrt(n)) + mu0, 2)
 
  ggplot(ggdat) +
- geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
- stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+ geom_line(aes(x=t, y=pdf.h0, color="Null"))+ # plot distribution of T under H0
+ stat_density(data=tibble(t=fts), #plot distribution of T under HA
+          aes(x=t, color= "Alternative"), 
+          geom="line")+
  geom_hline(yintercept=0) +
+ geom_ribbon(data = ggdat|> filter(t <= -t.critical), #fills area after t= 0.95
+  aes(x=t, ymin=0, ymax= pdf.h0), #max keeps it from going above line
+  fill= "darkorchid2", alpha= .5) +
+geom_ribbon(data = ggdat|> filter(t >= t.critical), #fills area after t= 0.95
+  aes(x=t, ymin=0, ymax= pdf.h0), #max keeps it from going above line
+  fill= "darkorchid2", alpha= .5) +
  # Plot observation
  geom_point(data=tibble(x=t.stat, y=0),
  aes(x=x, y=y), color="red", size=3) +
- # Plot mirrored observation
-
+ 
+# Plot mirrored observation
  geom_point(data=tibble(x=-t.stat, y=0),
  aes(x=x, y=y), color="red", size=3, alpha=0.3) +
  theme_bw()+
@@ -386,23 +509,22 @@ t.stat = t.test(x=dat.kasdin.cleaned$Closer_vals,
 ggdat <- tibble(t = seq(-4, 4, length.out=1000)) |>
  mutate(pdf.h0 = dt(t, df=24))
 
- # Resampling
- ts <- rep(NA, 1000)
- s <- sd(dat.kasdin.cleaned$Closer_vals)
- n <- nrow(dat.kasdin.cleaned)
- for(i in 1:1000){
- curr.sample <- sample(dat.kasdin.cleaned$Closer_vals, size=n, replace=T)
- ts[i] <- (mean(curr.sample) - mu0)/(s/sqrt(n))
- }
-
  # create vector of axis ticks
  t.breaks <- seq(-24, 24, 4)
- xbar.breaks <- round(t.breaks * (s/sqrt(n)) + mu0, 2)
+ xbar.breaks <- round(t.breaks * (cs/sqrt(n)) + mu0, 2)
 
  ggplot(ggdat) +
- geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
- stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+ geom_line(aes(x=t, y=pdf.h0, color="Null"))+ # plot distribution of T under H0
+ stat_density(data=tibble(t=cts), #plot distribution of T under HA
+          aes(x=t, color= "Alternative"), 
+          geom="line")+
  geom_hline(yintercept=0) +
+ geom_ribbon(data = ggdat|> filter(t <= -t.critical), #fills area after t= 0.95
+  aes(x=t, ymin=0, ymax= pdf.h0), #max keeps it from going above line
+  fill= "darkorchid2", alpha= .5) +
+geom_ribbon(data = ggdat|> filter(t >= t.critical), #fills area after t= 0.95
+  aes(x=t, ymin=0, ymax= pdf.h0), #max keeps it from going above line
+  fill= "darkorchid2", alpha= .5) +
  # Plot observation
  geom_point(data=tibble(x=t.stat, y=0),
  aes(x=x, y=y), color="red", size=3) +
@@ -435,23 +557,22 @@ t.stat = t.test(x=dat.kasdin.cleaned$difference,
 ggdat <- tibble(t = seq(-4, 4, length.out=1000)) |>
  mutate(pdf.h0 = dt(t, df=24))
 
- # Resampling
- ts <- rep(NA, 1000)
- s <- sd(dat.kasdin.cleaned$difference)
- n <- nrow(dat.kasdin.cleaned)
- for(i in 1:1000){
- curr.sample <- sample(dat.kasdin.cleaned$difference, size=n, replace=T)
- ts[i] <- (mean(curr.sample) - mu0)/(s/sqrt(n))
- }
-
  # create vector of axis ticks
  t.breaks <- seq(-24, 24, 4)
- xbar.breaks <- round(t.breaks * (s/sqrt(n)) + mu0, 2)
+ xbar.breaks <- round(t.breaks * (ds/sqrt(n)) + mu0, 2)
 
  ggplot(ggdat) +
- geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
- stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+ geom_line(aes(x=t, y=pdf.h0, color="Null"))+ # plot distribution of T under H0
+ stat_density(data=tibble(t=dts), #plot distribution of T under HA
+          aes(x=t, color= "Alternative"), 
+          geom="line")+
  geom_hline(yintercept=0) +
+ geom_ribbon(data = ggdat|> filter(t <= -t.critical), #fills area after t= 0.95
+  aes(x=t, ymin=0, ymax= pdf.h0), #max keeps it from going above line
+  fill= "darkorchid2", alpha= .5) +
+geom_ribbon(data = ggdat|> filter(t >= t.critical), #fills area after t= 0.95
+  aes(x=t, ymin=0, ymax= pdf.h0), #max keeps it from going above line
+  fill= "darkorchid2", alpha= .5) +
  # Plot observation
  geom_point(data=tibble(x=t.stat, y=0),
  aes(x=x, y=y), color="red", size=3) +
