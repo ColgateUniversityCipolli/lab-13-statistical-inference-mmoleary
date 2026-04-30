@@ -118,26 +118,8 @@ Using the `pwr` package for \texttt{R} [@pwr], conduct a power analysis. How man
 **Solution**
 
 ```{r}
-# FIND n <- ?
-# Effect size
-d <- 0.65
-# T~t(v=n-1) under the null
-# T~t(v=n-1, ncp=0.2*sqrt(n)) under the alternative
-alpha <- 0.05
-n <- 50 # reasonable starting value
-repeat{
- (t.critical <- qt(1-alpha, df=n-1)) # 95th percentile under H0
- # anything larger than this provides statistically discernible
- # support for Ha
- (power <- 1-pt(q=t.critical, df=n-1, ncp=0.2*sqrt(n)))
-
- if(power>0.80){
- break;
- }else{
- n <- n + 1
- }
- }
- n
+library("pwr")
+pwr.t.test(d = 0.65, power = 0.80, alternative = "two.sided", type="one.sample")
 ```
 
 ## Part b
@@ -289,10 +271,34 @@ Conduct the inferences they do in the paper. Make sure to report the results a l
 
 * "The close responses differed significantly from 0 ($p=1.63 \times 10^{-8}$).''\
 **Note**: Use the appropriate one-sided test.
+
+```{r}
+library("effectsize")
+hedges_g(x=dat.kasdin.cleaned$Closer_vals, mu = 0, alternative = "greater")
+t.test(x=dat.kasdin.cleaned$Closer_vals, mu=0, alternative="greater")
+```
+
+($t=9.1573$, $p<0.0001$; $g=1.77$; 95% CI: $0.1452511$, $\infty$)
+
 * "The far responses differed significantly from 0 ($p=5.17 \times 10^{-8}$).''\
 **Note**: Use the appropriate one-sided test.
+
+```{r}
+hedges_g(x=dat.kasdin.cleaned$Farther_vals, mu = 0, alternative = "less")
+t.test(x=dat.kasdin.cleaned$Farther_vals, mu=0, alternative="less")
+```
+
+($t=-7.9245$, $p<0.0001$; $g=-1.54$; 95% CI: $-\infty$, $4.60$)
+
 * "The difference between populations was significant ($p=1.04 \times10^{-8}$).''\
 **Note**: Use the two-sided test.
+
+```{r}
+hedges_g(x=dat.kasdin.cleaned$difference, mu = 0, alternative = "two.sided")
+t.test(x=dat.kasdin.cleaned$difference, mu=0, alternative="two.sided")
+```
+
+($t=9.1428$, $p<0.0001$; $g=1.77$; 95% CI: $0.303$, $0.480$)
 
 ## Part e 
 
