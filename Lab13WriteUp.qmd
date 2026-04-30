@@ -60,6 +60,7 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 #| include: false
 library(tidyverse)
 library(patchwork)
+library(e1071)
 ```
 
 # Remaining Portfolio Work!
@@ -114,8 +115,45 @@ That is, the unit of measure is the syllable as measured on six birds, and the m
 ## Part a
 Using the `pwr` package for \texttt{R} [@pwr], conduct a power analysis. How many observations would the researchers need to detect a moderate-to-large effect ($d=0.65$) when using $\alpha=0.05$ and default power (0.80) for a two-sided one sample $t$ test.
 
+**Solution**
+
+```{r}
+# FIND n <- ?
+# Effect size
+d <- 0.65
+# T~t(v=n-1) under the null
+# T~t(v=n-1, ncp=0.2*sqrt(n)) under the alternative
+alpha <- 0.05
+n <- 50 # reasonable starting value
+repeat{
+ (t.critical <- qt(1-alpha, df=n-1)) # 95th percentile under H0
+ # anything larger than this provides statistically discernible
+ # support for Ha
+ (power <- 1-pt(q=t.critical, df=n-1, ncp=0.2*sqrt(n)))
+
+ if(power>0.80){
+ break;
+ }else{
+ n <- n + 1
+ }
+ }
+ n
+```
+
 ## Part b
 Click the link to go to the paper. Find the source data for Figure 2. Download the Excel file. Describe what you needed to do to collect the data for Figure 2(g). Note that you only need the `closer_vals` and `further_vals`. Ensure to `mutate()` the data to get a difference (e.g., `closer_vals - further_vals`).
+
+**Solution**
+
+After finding and downloading the data, I put both the closer_vals and the further_vals on the same table in different columns. I then exported this as a CSV to this lab.
+
+```{r}
+dat.kasdin = read.csv("41586_2025_8729_MOESM4_ESM.csv") #reads csv file
+dat.kasdin.cleaned = dat.kasdin |>
+                        mutate(difference = Closer_vals - Farther_vals)
+# saves new table and passes table through the mutate function
+# uses mutate function to create new difference column
+```
 
 ## Part c
 Summarize the data.
@@ -124,6 +162,126 @@ Summarize the data.
 * Summarize the closer data. Do the data suggest that dopamine in the brains of young zebra finches increases when they sing closer to their adult song?
 * Summarize the paired differences. Do the data suggest that there is a difference between dopamine in the brains of young zebra finches when they sing further away compared to closer to their adult song?
 * **Optional Challenge** Can you reproduce Figure 2(g)? Note that the you can use \texttt{geom\_errorbar()} to plot the range created by adding the mean $\pm$ one standard deviation.
+
+**Solution**
+
+```{r}
+ggplot(dat.kasdin.cleaned) + # Specify Data
+  geom_violin(aes(x = "", # Specify no grouping
+      y = Closer_vals), # Specify y-axis
+fill = "lightgrey", alpha=0.5) + # A transparent light grey
+geom_boxplot(aes(x = "", # Specify no grouping
+y = Closer_vals), # Specify y-axis
+width = 0.1)+
+theme_bw() + # A cleaner theme
+labs(x = "", # Specify axis labels
+y = "Percent Change in fluorescence") +
+ggtitle("Change in fluorescence for the top 10%") + # Plot title
+theme(axis.ticks.x = element_blank()) # Remove x-axis tick
+```
+
+```{r}
+dat.kasdin.cleaned.summary <- dat.kasdin.cleaned |>
+  summarize( #calculates data for a table with the following measures
+    n = n(),
+    Mean = mean(Closer_vals, na.rm = T),
+    SD = sd(Closer_vals, na.rm = T),
+    Median = median(Closer_vals, na.rm = T),
+    IQR = IQR(Closer_vals, na.rm = T),
+    Skewness = e1071::skewness(Closer_vals, na.rm = T),
+    "Excess Kurtosis" = e1071::kurtosis(Closer_vals, na.rm = T)
+  ) 
+```
+
+```{r}
+#| label: tbl-close
+#| tbl-cap: "Fluorescence Percent Changes For Closer"
+#| tbl-align: "center"
+#| echo: false
+dat.kasdin.cleaned.summary |>
+  knitr::kable(digits = 3) #digits specify decimal in table values
+```
+
+The data does suggest that the dopamine in the brains of young zebra finches increases when they sing closer as both the median and mean show an increase in the percent of dopamine experiences by the finches. While the data distribtion is fairly platykurtic, the majority of the values are increases based on the IQR and standard deviation.
+
+```{r}
+ggplot(dat.kasdin.cleaned) + # Specify Data
+  geom_violin(aes(x = "", # Specify no grouping
+                  y = Farther_vals), # Specify y-axis
+                  fill = "lightgrey", alpha=0.5) + # A transparent light grey
+  geom_boxplot(aes(x = "", # Specify no grouping
+                   y = Farther_vals), # Specify y-axis
+                   width = 0.1)+
+  theme_bw() + # A cleaner theme
+  labs(x = "", # Specify axis labels
+       y = "Percent Change in fluorescence") +
+ggtitle("Change in fluorescence for the bottom 10%") + # Plot title
+theme(axis.ticks.x = element_blank()) # Remove x-axis tick
+```
+
+```{r}
+dat.kasdin.cleaned.summary <- dat.kasdin.cleaned |>
+  summarize( #calculates data for a table with the following measures
+    n = n(),
+    Mean = mean(Farther_vals, na.rm = T),
+    SD = sd(Farther_vals, na.rm = T),
+    Median = median(Farther_vals, na.rm = T),
+    IQR = IQR(Farther_vals, na.rm = T),
+    Skewness = e1071::skewness(Farther_vals, na.rm = T),
+    "Excess Kurtosis" = e1071::kurtosis(Farther_vals, na.rm = T)
+  ) 
+```
+
+```{r}
+#| label: tbl-farth
+#| tbl-cap: "Fluorescence Percent Changes For Farther"
+#| tbl-align: "center"
+#| echo: false
+dat.kasdin.cleaned.summary |>
+  knitr::kable(digits = 3) #digits specify decimal in table values
+```
+
+The data does suggest that the dopamine in the brains of young zebra finches decreases when they sing further away as both the median and mean show a decrease in the percent of dopamine experiences by the finches. Because the distribution is fairly skewed, using the IQR, the middle 50% experience a decrease in dopamine. 
+
+```{r}
+ggplot(dat.kasdin.cleaned) + # Specify Data
+  geom_violin(aes(x = "", # Specify no grouping
+                  y = difference), # Specify y-axis
+                  fill = "lightgrey", alpha=0.5) + # A transparent light grey
+  geom_boxplot(aes(x = "", # Specify no grouping
+                   y = difference), # Specify y-axis
+                   width = 0.1)+
+  theme_bw() + # A cleaner theme
+  labs(x = "", # Specify axis labels
+       y = "Percent Change in fluorescence") +
+ggtitle("Fluorescence difference change between groups") + # Plot title
+theme(axis.ticks.x = element_blank()) # Remove x-axis tick
+```
+
+```{r}
+#| size: scriptsize
+dat.kasdin.cleaned.summary <- dat.kasdin.cleaned |>
+  summarize( #calculates data for a table with the following measures
+    n = n(),
+    Mean = mean(difference, na.rm = T),
+    SD = sd(difference, na.rm = T),
+    Median = median(difference, na.rm = T),
+    IQR = IQR(difference, na.rm = T),
+    Skewness = e1071::skewness(difference, na.rm = T),
+    "Excess Kurtosis" = e1071::kurtosis(difference, na.rm = T)
+  ) 
+```
+
+```{r}
+#| label: tbl-diff
+#| tbl-cap: "Differences in Fluorescence"
+#| tbl-align: "center"
+#| echo: false
+dat.kasdin.cleaned.summary |>
+  knitr::kable(digits = 3) #digits specify decimal in table values
+```
+
+These data summaries do suggest that there is a difference between the dopamine levels of the zebra finches singing closer and farther away. The mean and medians both summarize that the difference is not centered at zero, suggesting that there is a difference. Additionally, zero is not contained in the IQR and is over one standard deviation away from the center, demonstrating that no difference is not common in this data.
 
 ## Part d
 Conduct the inferences they do in the paper. Make sure to report the results a little more comprehensively -- that is your parenthetical should look something like: ($t=23.99$, $p<0.0001$; $g=1.34$; 95% CI: 4.43, 4.60). Ensure to verify any conditions for use.\
