@@ -61,6 +61,7 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 library(tidyverse)
 library(patchwork)
 library(e1071)
+library(effectsize)
 ```
 
 # Remaining Portfolio Work!
@@ -269,11 +270,21 @@ These data summaries do suggest that there is a difference between the dopamine 
 Conduct the inferences they do in the paper. Make sure to report the results a little more comprehensively -- that is your parenthetical should look something like: ($t=23.99$, $p<0.0001$; $g=1.34$; 95% CI: 4.43, 4.60). Ensure to verify any conditions for use.\
 **Note**: Your numbers will vary slightly because they reported two-sided test $p$-values instead of the specified one-sided tests. 
 
+**Solution**
+
+*Conditions*
+
+* The sample is generalizable to the adult zebra finch population in Area X.
+* Researchers collected the observations through randomization, so observations are independent.
+* Based on our power calculations, the sample size is sufficiently large.
+
+
+
 * "The close responses differed significantly from 0 ($p=1.63 \times 10^{-8}$).''\
 **Note**: Use the appropriate one-sided test.
 
+
 ```{r}
-library("effectsize")
 hedges_g(x=dat.kasdin.cleaned$Closer_vals, mu = 0, alternative = "greater")
 t.test(x=dat.kasdin.cleaned$Closer_vals, mu=0, alternative="greater")
 ```
@@ -309,3 +320,149 @@ resampling distribution for $T$ to the chart to demonstrate any differences
 between the null distribution and the distribution suggested by the data.
 
 
+```{r}
+#| label: fig-Farther-HPtest
+#| fig-cap: "T test distributions for Farther Values."
+#| fig-width: 10
+#| fig-height: 6
+#| scale: "80%"
+#| fig-align: "center"
+
+mu0 = 0
+
+t.stat = t.test(x=dat.kasdin.cleaned$Farther_vals, 
+                mu=0, 
+                alternative="less")$statistic
+
+ggdat <- tibble(t = seq(-4, 4, length.out=1000)) |>
+ mutate(pdf.h0 = dt(t, df=24))
+
+ # Resampling
+ ts <- rep(NA, 1000)
+ s <- sd(dat.kasdin.cleaned$Farther_vals)
+ n <- nrow(dat.kasdin.cleaned)
+ for(i in 1:1000){
+ curr.sample <- sample(dat.kasdin.cleaned$Farther_vals, size=n, replace=T)
+ ts[i] <- (mean(curr.sample) - mu0)/(s/sqrt(n))
+ }
+
+ # create vector of axis ticks
+ t.breaks <- seq(-24, 24, 4)
+ xbar.breaks <- round(t.breaks * (s/sqrt(n)) + mu0, 2)
+
+ ggplot(ggdat) +
+ geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
+ stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+ geom_hline(yintercept=0) +
+ # Plot observation
+ geom_point(data=tibble(x=t.stat, y=0),
+ aes(x=x, y=y), color="red", size=3) +
+ # Plot mirrored observation
+
+ geom_point(data=tibble(x=-t.stat, y=0),
+ aes(x=x, y=y), color="red", size=3, alpha=0.3) +
+ theme_bw()+
+ # Specify axis ticks
+ scale_x_continuous("t", breaks=t.breaks,
+ sec.axis = sec_axis(~., bquote(bar(x)),
+breaks=t.breaks,
+labels=xbar.breaks))
+```
+
+```{r}
+#| label: fig-Closer-HPtest
+#| fig-cap: "T test distributions for Closer Values."
+#| fig-width: 10
+#| fig-height: 6
+#| scale: "80%"
+#| fig-align: "center"
+
+mu0 = 0
+
+t.stat = t.test(x=dat.kasdin.cleaned$Closer_vals, 
+                mu=0, 
+                alternative="less")$statistic
+
+ggdat <- tibble(t = seq(-4, 4, length.out=1000)) |>
+ mutate(pdf.h0 = dt(t, df=24))
+
+ # Resampling
+ ts <- rep(NA, 1000)
+ s <- sd(dat.kasdin.cleaned$Closer_vals)
+ n <- nrow(dat.kasdin.cleaned)
+ for(i in 1:1000){
+ curr.sample <- sample(dat.kasdin.cleaned$Closer_vals, size=n, replace=T)
+ ts[i] <- (mean(curr.sample) - mu0)/(s/sqrt(n))
+ }
+
+ # create vector of axis ticks
+ t.breaks <- seq(-24, 24, 4)
+ xbar.breaks <- round(t.breaks * (s/sqrt(n)) + mu0, 2)
+
+ ggplot(ggdat) +
+ geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
+ stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+ geom_hline(yintercept=0) +
+ # Plot observation
+ geom_point(data=tibble(x=t.stat, y=0),
+ aes(x=x, y=y), color="red", size=3) +
+ # Plot mirrored observation
+
+ geom_point(data=tibble(x=-t.stat, y=0),
+ aes(x=x, y=y), color="red", size=3, alpha=0.3) +
+ theme_bw()+
+ # Specify axis ticks
+ scale_x_continuous("t", breaks=t.breaks,
+ sec.axis = sec_axis(~., bquote(bar(x)),
+breaks=t.breaks,
+labels=xbar.breaks))
+```
+
+```{r}
+#| label: fig-Differences-HPtest
+#| fig-cap: "T test distributions for Differences in Values."
+#| fig-width: 10
+#| fig-height: 6
+#| scale: "80%"
+#| fig-align: "center"
+
+mu0 = 0
+
+t.stat = t.test(x=dat.kasdin.cleaned$difference, 
+                mu=0, 
+                alternative="two.sided")$statistic
+
+ggdat <- tibble(t = seq(-4, 4, length.out=1000)) |>
+ mutate(pdf.h0 = dt(t, df=24))
+
+ # Resampling
+ ts <- rep(NA, 1000)
+ s <- sd(dat.kasdin.cleaned$difference)
+ n <- nrow(dat.kasdin.cleaned)
+ for(i in 1:1000){
+ curr.sample <- sample(dat.kasdin.cleaned$difference, size=n, replace=T)
+ ts[i] <- (mean(curr.sample) - mu0)/(s/sqrt(n))
+ }
+
+ # create vector of axis ticks
+ t.breaks <- seq(-24, 24, 4)
+ xbar.breaks <- round(t.breaks * (s/sqrt(n)) + mu0, 2)
+
+ ggplot(ggdat) +
+ geom_line(aes(x=t, y=pdf.h0))+ # plot distribution of T under H0
+ stat_density(data=tibble(t=ts), aes(x=t), color="grey", geom="line")+
+ geom_hline(yintercept=0) +
+ # Plot observation
+ geom_point(data=tibble(x=t.stat, y=0),
+ aes(x=x, y=y), color="red", size=3) +
+ # Plot mirrored observation
+
+ geom_point(data=tibble(x=-t.stat, y=0),
+ aes(x=x, y=y), color="red", size=3, alpha=0.3) +
+ theme_bw()+
+ # Specify axis ticks
+ scale_x_continuous("t", breaks=t.breaks,
+ sec.axis = sec_axis(~., bquote(bar(x)),
+breaks=t.breaks,
+labels=xbar.breaks))
+```
