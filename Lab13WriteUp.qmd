@@ -242,7 +242,6 @@ theme(axis.ticks.x = element_blank()) # Remove x-axis tick
 ```
 
 ```{r}
-#| size: scriptsize
 dat.kasdin.cleaned.summary <- dat.kasdin.cleaned |>
   summarize( #calculates data for a table with the following measures
     n = n(),
@@ -287,21 +286,23 @@ set.seed(3434)
 mu0 = 0
 
  # Resampling
- fts <- rep(NA, 1000)
+ fts <- rep(NA, 1000) #creates empty vectors
  fs <- sd(dat.kasdin.cleaned$Farther_vals)
  n <- nrow(dat.kasdin.cleaned)
  for(i in 1:1000){
    curr.sample <- sample(dat.kasdin.cleaned$Farther_vals, size=n, replace=T)
    fts[i] <- (mean(curr.sample) - mu0)/(fs/sqrt(n))
  }
+ #resample the data of farther values 1000 times and save the means
 
  p1 <- ggplot() +
    stat_density(data=tibble(t=fts), aes(x=t), color="grey", geom="line")+
    geom_hline(yintercept=0) +
    theme_bw()+
-   labs(x=bquote(z),
+   labs(x=bquote(t),
    y="Density",
-   caption=paste("mean:", round(mean(fts),2), ", sd:", round(sd(fs),2)))
+   caption=paste("mean:", round(mean(fts),2), ", sd:", round(sd(fs),2)))+
+   ggtitle("Farther Values") # Plot title
  
 
 # Resampling
@@ -317,9 +318,10 @@ mu0 = 0
    stat_density(data=tibble(t=cts), aes(x=t), color="grey", geom="line")+
    geom_hline(yintercept=0) +
    theme_bw()+
-   labs(x=bquote(z),
+   labs(x=bquote(t),
    y="Density",
-   caption=paste("mean:", round(mean(cts),2), ", sd:", round(sd(cs),2)))
+   caption=paste("mean:", round(mean(cts),2), ", sd:", round(sd(cs),2)))+
+   ggtitle("Closer Values") # Plot title
 
  # Resampling
  dts <- rep(NA, 1000)
@@ -334,15 +336,15 @@ mu0 = 0
    stat_density(data=tibble(t=dts), aes(x=t), color="grey", geom="line")+
    geom_hline(yintercept=0) +
    theme_bw()+
-   labs(x=bquote(z),
+   labs(x=bquote(t),
    y="Density",
-   caption=paste("mean:", round(mean(dts),2), ", sd:", round(sd(ds),2)))
+   caption=paste("mean:", round(mean(dts),2), ", sd:", round(sd(ds),2)))+
+   ggtitle("Differences") # Plot title
 
 (p1 | p2 | p3)
 ```
 
 ```{r}
-#| size: scriptsize
 closer.sampling.summary = tibble(t=cts) |>
   summarize( #calculates data for a table with the following measures
     Skewness = e1071::skewness(cts, na.rm = T),
@@ -351,7 +353,6 @@ closer.sampling.summary = tibble(t=cts) |>
 ```
 
 ```{r}
-#| size: scriptsize
 farther.sampling.summary = tibble(t=cts) |>
   summarize( #calculates data for a table with the following measures
     Skewness = e1071::skewness(fts, na.rm = T),
@@ -378,7 +379,6 @@ closer.sampling.summary |>
 ```
 
 ```{r}
-#| size: scriptsize
 difference.sampling.summary = tibble(t=dts) |>
   summarize( #calculates data for a table with the following measures
     Skewness = e1071::skewness(dts, na.rm = T),
@@ -454,8 +454,10 @@ mu0 = 0
 t.stat = t.test(x=dat.kasdin.cleaned$Farther_vals, 
                 mu=0, 
                 alternative="less")$statistic
+  # gives t statistic of data
 
 t.critical = qt(1-0.05, df=24)
+#gives critical t value
 
 ggdat <- tibble(t = seq(-4, 4, length.out=1000)) |>
  mutate(pdf.h0 = dt(t, df=24))
@@ -587,3 +589,7 @@ geom_ribbon(data = ggdat|> filter(t >= t.critical), #fills area after t= 0.95
 breaks=t.breaks,
 labels=xbar.breaks))
 ```
+
+## Citations
+
+I used R [@R] for my coding language, the knitr package [@knitr] for organizing graphs, the patchwork package [@patchwork] to make clean graphs, and the tidyverse package [@tidyverse] for more readable code and graphs. I used the e1071 package for excess kurtosis calculations [@e1071]; I used the effect size package [@effectsize] to calculate the effect sizes; I used the pwr package [@pwr] for power calculations.
